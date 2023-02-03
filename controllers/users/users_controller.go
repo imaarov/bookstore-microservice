@@ -1,0 +1,39 @@
+package users
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/imaarov/bookstore_microservice/domain/users"
+	"github.com/imaarov/bookstore_microservice/services"
+	"github.com/imaarov/bookstore_microservice/utils/errors"
+)
+
+func CreateUser(c *gin.Context) {
+	var user users.User
+
+	if err := c.ShouldBindJSON(&user); err != nil {
+		//TODO: Handle Json Error -> RETURN BAD REQUEST TO THE CALLER
+		restErr := errors.NewBadRequestError("Invalid Json Body")
+		c.JSON(restErr.Status, restErr)
+		fmt.Println("Json Err:", err.Error())
+		return
+	}
+
+	result, saveErr := services.CreateUser(user)
+	if saveErr != nil {
+		//TODO:Handle User Creation Error
+		c.JSON(saveErr.Status, saveErr)
+		return
+	}
+	c.JSON(http.StatusCreated, result)
+}
+
+func GetUser(c *gin.Context) {
+	c.String(http.StatusNotImplemented, "<h1>implement me! ???</h1>")
+}
+
+func FindUser(c *gin.Context) {
+	c.String(http.StatusNotImplemented, "<h1>implement me! ???</h1>")
+}
