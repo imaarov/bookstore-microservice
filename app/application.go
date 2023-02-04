@@ -12,3 +12,10 @@ func StartApplication() {
 	mapUrls()
 	router.Run(":8080")
 }
+
+// func LoadEnvPath(name string) {
+// 	err := godotenv.Load(name)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
