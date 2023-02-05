@@ -70,7 +70,6 @@ func (user *User) Update() *errors.RestErr {
 
 	_, statementErr := statement.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.Id)
 	if err != nil {
-		fmt.Println("shit")
 		return mysql_utils.ParseError(statementErr)
 	}
 	return nil
