@@ -2,6 +2,7 @@ package users
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/imaarov/bookstore_microservice/datasources/mysql/users_db"
 	"github.com/imaarov/bookstore_microservice/utils/date_utils"
@@ -10,10 +11,8 @@ import (
 
 const (
 	queryUserInsert = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?, ?, ?, ?);"
-)
-
-var (
-	userDB = make(map[int64]*User)
+	queryUserGet    = "SELECT * FROM users WHERE id = ?;"
+	errorNoRows     = "no rows in result set"
 )
 
 func (user *User) Get() *errors.RestErr {
@@ -21,15 +20,25 @@ func (user *User) Get() *errors.RestErr {
 	if err != nil {
 		panic(err)
 	}
-	result := userDB[user.Id]
-	if result == nil {
-		return errors.NewNotFoundError(fmt.Sprintf("User %d not found", user.Id))
+
+	statement, err := users_db.Client.Prepare(queryUserGet)
+	if err != nil {
+		return errors.NewInternalServerError(err.Error())
 	}
-	user.Id = result.Id
-	user.FirstName = result.FirstName
-	user.LastName = result.LastName
-	user.Email = result.Email
-	user.DateCreated = result.DateCreated
+	defer statement.Close()
+
+	result := statement.QueryRow(user.Id)
+	if err := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
+		fmt.Println(err)
+		if strings.Contains(err.Error(), errorNoRows) {
+			return errors.NewNotFoundError(
+				fmt.Sprintf("user %d not found", user.Id),
+			)
+		}
+		return errors.NewInternalServerError(
+			fmt.Sprintf("Error while trying to get user %d: %s", user.Id, err.Error()),
+		)
+	}
 
 	return nil
 }
