@@ -1,12 +1,10 @@
 package users
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/imaarov/bookstore_microservice/datasources/mysql/users_db"
 	"github.com/imaarov/bookstore_microservice/utils/date_utils"
 	"github.com/imaarov/bookstore_microservice/utils/errors"
+	"github.com/imaarov/bookstore_microservice/utils/mysql_utils"
 )
 
 const (
@@ -28,16 +26,8 @@ func (user *User) Get() *errors.RestErr {
 	defer statement.Close()
 
 	result := statement.QueryRow(user.Id)
-	if err := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
-		fmt.Println(err)
-		if strings.Contains(err.Error(), errorNoRows) {
-			return errors.NewNotFoundError(
-				fmt.Sprintf("user %d not found", user.Id),
-			)
-		}
-		return errors.NewInternalServerError(
-			fmt.Sprintf("Error while trying to get user %d: %s", user.Id, err.Error()),
-		)
+	if getErr := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
+		return mysql_utils.ParseError(getErr)
 	}
 
 	return nil
@@ -51,17 +41,13 @@ func (user *User) Save() *errors.RestErr {
 	defer statement.Close()
 
 	user.DateCreated = date_utils.GetNowString()
-	insertRes, err := statement.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
-	if err != nil {
-		return errors.NewInternalServerError(
-			fmt.Sprintf("Error while trying to save user: %s", err.Error()),
-		)
+	insertRes, saveErr := statement.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
+	if saveErr != nil {
+		mysql_utils.ParseError(saveErr)
 	}
 	userId, err := insertRes.LastInsertId()
 	if err != nil {
-		return errors.NewInternalServerError(
-			fmt.Sprintf("Error while trying  fetch last id: %s", err.Error()),
-		)
+		return mysql_utils.ParseError(err)
 	}
 	user.Id = userId
 
