@@ -36,7 +36,8 @@ func Create(c *gin.Context) {
 		c.JSON(saveErr.Status, saveErr)
 		return
 	}
-	c.JSON(http.StatusCreated, result)
+	publicRequest := c.GetHeader("X-public") == "true"
+	c.JSON(http.StatusCreated, result.Marshall(publicRequest))
 }
 
 func Get(c *gin.Context) {
@@ -51,8 +52,8 @@ func Get(c *gin.Context) {
 		c.JSON(getErr.Status, getErr)
 		return
 	}
-
-	c.JSON(http.StatusOK, user)
+	publicRequest := c.GetHeader("X-public") == "true"
+	c.JSON(http.StatusOK, user.Marshall(publicRequest))
 }
 
 func Update(c *gin.Context) {
@@ -78,7 +79,8 @@ func Update(c *gin.Context) {
 		c.JSON(updateErr.Status, updateErr)
 		return
 	}
-	c.JSON(http.StatusOK, result)
+	publicRequest := c.GetHeader("X-public") == "true"
+	c.JSON(http.StatusOK, result.Marshall(publicRequest))
 }
 
 func Delete(c *gin.Context) {
@@ -98,4 +100,17 @@ func Delete(c *gin.Context) {
 
 func FindUser(c *gin.Context) {
 	c.String(http.StatusNotImplemented, "<h1>implement me! ???</h1>")
+}
+
+func Search(c *gin.Context) {
+	status := c.Query("status")
+	users, err := services.Search(status)
+	fmt.Println(err)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	publicRequest := c.GetHeader("X-public") == "true"
+	c.JSON(http.StatusOK, users.Marshall(publicRequest))
 }
