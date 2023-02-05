@@ -10,8 +10,8 @@ func CreateUser(user users.User) (*users.User, *errors.RestErr) {
 		return nil, err
 	}
 
-	if err := user.Save(); err != nil {
-		return nil, err
+	if errSave := user.Save(); errSave != nil {
+		return nil, errSave
 	}
 
 	return &user, nil
@@ -56,4 +56,9 @@ func UpdateUser(isPartial bool, user users.User) (*users.User, *errors.RestErr) 
 	}
 
 	return current, nil
+}
+
+func DeleteUser(userId int64) *errors.RestErr {
+	user := &users.User{Id: userId}
+	return user.Delete()
 }
