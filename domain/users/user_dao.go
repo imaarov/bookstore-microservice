@@ -8,6 +8,10 @@ import (
 	"github.com/imaarov/bookstore_microservice/utils/errors"
 )
 
+const (
+	queryUserInsert = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?, ?, ?, ?);"
+)
+
 var (
 	userDB = make(map[int64]*User)
 )
@@ -31,17 +35,26 @@ func (user *User) Get() *errors.RestErr {
 }
 
 func (user *User) Save() *errors.RestErr {
-	current := userDB[user.Id]
-	if current != nil {
-		if current.Email == user.Email {
-			return errors.NewBadRequestError(fmt.Sprintf("Email %s Already Exists", user.Email))
-		}
-		return errors.NewBadRequestError(fmt.Sprintf("User %d Already Exists", user.Id))
+	statement, err := users_db.Client.Prepare(queryUserInsert)
+	if err != nil {
+		return errors.NewInternalServerError(err.Error())
 	}
+	defer statement.Close()
 
 	user.DateCreated = date_utils.GetNowString()
-
-	userDB[user.Id] = user
+	insertRes, err := statement.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
+	if err != nil {
+		return errors.NewInternalServerError(
+			fmt.Sprintf("Error while trying to save user: %s", err.Error()),
+		)
+	}
+	userId, err := insertRes.LastInsertId()
+	if err != nil {
+		return errors.NewInternalServerError(
+			fmt.Sprintf("Error while trying  fetch last id: %s", err.Error()),
+		)
+	}
+	user.Id = userId
 
 	return nil
 }
